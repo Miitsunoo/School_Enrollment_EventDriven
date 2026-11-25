@@ -76,8 +76,9 @@ include('includes/menu1.php');
               <tbody>
 			  <?php
 			  include('includes/conn.php');
-				$getusers=mysql_query("SELECT * FROM studenttbl");
-				if(mysql_num_rows($getusers)==0)
+				$connection = $GLOBALS['online_enroll_admin_connection'];
+				$getusers=mysqli_query($connection, "SELECT * FROM studenttbl ORDER BY studnum ASC");
+				if(mysqli_num_rows($getusers)==0)
 				{
 				echo"<tr>
 						<td colspan ='5' align='center'>
@@ -87,16 +88,21 @@ include('includes/menu1.php');
 				}
 				else
 				{
-				while($getrows=mysql_fetch_array($getusers))
+				while($getrows=mysqli_fetch_assoc($getusers))
 					{
-					echo"<tr>
-							<td>$getrows[studnum]</td>
-							<td>$getrows[fname] $getrows[minitial] $getrows[lname]</td>
-							<td>$getrows[course]</td>
-							<td>$getrows[yearlvl]</td>;"?>
-							<td><a href="deletecurruser.php?<?php echo"accid=$getrows[ID]";?>" onclick="return confirm('Are you sure?');">DELETE</a></td>
-						</tr>
-						<?php
+					$studentId = (int) $getrows['ID'];
+					$studentNum = htmlspecialchars($getrows['studnum']);
+					$name = htmlspecialchars(trim($getrows['fname'].' '.$getrows['minitial'].' '.$getrows['lname']));
+					$course = htmlspecialchars($getrows['course']);
+					$yearLevel = htmlspecialchars($getrows['yearlvl']);
+					echo '<tr>';
+					echo '<td>'. $studentNum .'</td>';
+					echo '<td>'. $name .'</td>';
+					echo '<td>'. $yearLevel .'</td>';
+					echo '<td>'. $course .'</td>';
+					echo '<td><a href="addnewuser.php?accid='. $studentId .'">EDIT</a> | ';
+					echo '<a href="deletecurruser.php?accid='. $studentId .'" onclick="return confirm(\'Are you sure?\');">DELETE</a></td>';
+					echo '</tr>';
 					}
 				}
 					?>

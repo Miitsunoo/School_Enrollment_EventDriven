@@ -77,8 +77,9 @@ include('includes/menu1.php');
               </thead>    
               <tbody>
 					 <?php
-				$getusers=mysql_query("SELECT * FROM subjecttbl");
-				if(mysql_num_rows($getusers)==0)
+				$connection = $GLOBALS['online_enroll_admin_connection'];
+				$getusers=mysqli_query($connection, "SELECT * FROM subjecttbl ORDER BY subjectcode ASC");
+				if(mysqli_num_rows($getusers)==0)
 				{
 				echo"<tr>
 						<td colspan ='4' align='center'>
@@ -88,14 +89,19 @@ include('includes/menu1.php');
 				}
 				else
 				{
-				while($getrows=mysql_fetch_array($getusers))
+				while($getrows=mysqli_fetch_assoc($getusers))
 					{
+					$subjectId = (int) $getrows['ID'];
+					$subjectCode = htmlspecialchars($getrows['subjectcode']);
+					$subjectTitle = htmlspecialchars($getrows['subjecttitle']);
+					$numUnits = htmlspecialchars($getrows['numofunits']);
 					echo"<tr>
-							<td>$getrows[subjectcode]</td>
-							<td>$getrows[subjecttitle]</td>
-							<td>$getrows[numofunits]</td>";
+							<td>$subjectCode</td>
+							<td>$subjectTitle</td>
+							<td>$numUnits</td>";
 					?>
-							 <td><a href="deletecurrsubj.php?<?php echo "accid=$getrows[ID]";?>" onclick="return confirm('Are you sure?');">DELETE</a></td>
+							 <td><a href="addnewsubj.php?accid=<?php echo $subjectId;?>">EDIT</a> |
+							 <a href="deletecurrsubj.php?accid=<?php echo $subjectId;?>" onclick="return confirm('Are you sure?');">DELETE</a></td>
 						</tr>
 						<?php
 					}
