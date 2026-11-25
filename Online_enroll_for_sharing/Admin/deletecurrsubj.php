@@ -1,10 +1,13 @@
 <?php
-if(isset($_GET['accid']))
+session_start();
+include('logcheck.php');
+require('includes/conn.php');
+
+if(isset($_GET['accid']) && ctype_digit((string)$_GET['accid']))
 {
-	$num=$_GET['accid'];
-	require('includes/conn.php');
-	
-	$query2=mysql_query("DELETE FROM subjecttbl WHERE ID = '$num'");
+	$num=(int)$_GET['accid'];
+	$connection=$GLOBALS['online_enroll_admin_connection'];
+	mysqli_query($connection, "DELETE FROM subjecttbl WHERE ID = $num");
 	echo"<script>window.alert('Successfully Removed the selected subject')</script>";
 	echo"<script>window.location='subjectreg.php'</script>";
 }

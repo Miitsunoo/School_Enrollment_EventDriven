@@ -1,10 +1,17 @@
 <?php
 	session_start();
 	include('logcheck.php');
+	include('includes/conn.php');
+	$connection=$GLOBALS['online_enroll_admin_connection'];
+	$editId=isset($_GET['accid']) && ctype_digit((string)$_GET['accid']) ? (int)$_GET['accid'] : 0;
+	$subjectRow=null;
+	if($editId)
+	{
+		$result=mysqli_query($connection, "SELECT * FROM subjecttbl WHERE ID=$editId");
+		$subjectRow=mysqli_fetch_assoc($result);
+	}
 	if(isset($_POST['register']))
 	{
-		include('includes/conn.php');
-		
 		$course=$_POST['course'];
 		$stitle=$_POST['stitle'];
 		$scode=$_POST['scode'];
@@ -34,10 +41,23 @@
 			$istutorial=0;
 		}
 		
-		$insertquery=mysql_query("INSERT INTO subjecttbl VALUES ('','$scode','$stitle','$numunits','$sroom','$stime','$sday','$sinstructor',$islab,$istutorial,'$sdescription','$course')");
-		
-		echo"<script>window.alert('Successfully Created new Subject')</script>";
-		echo"<script>window.location='addnewsubj.php'</script>";
+		$editId=isset($_POST['accid']) && ctype_digit((string)$_POST['accid']) ? (int)$_POST['accid'] : 0;
+		if($editId)
+			$stmt=mysqli_prepare($connection, "UPDATE subjecttbl SET subjectcode=?, subjecttitle=?, numofunits=?, room=?, time=?, instructor=?, day=?, islab=?, istutorial=?, description=?, course_con=? WHERE ID=?");
+		else
+			$stmt=mysqli_prepare($connection, "INSERT INTO subjecttbl (subjectcode,subjecttitle,numofunits,room,time,instructor,day,islab,istutorial,description,course_con) VALUES (?,?,?,?,?,?,?,?,?,?,?)");
+		if($editId)
+		{
+			mysqli_stmt_bind_param($stmt,'sssssssiissi',$scode,$stitle,$numunits,$sroom,$stime,$sinstructor,$sday,$islab,$istutorial,$sdescription,$course,$editId);
+		}
+		else
+		{
+			mysqli_stmt_bind_param($stmt,'sssssssiiss',$scode,$stitle,$numunits,$sroom,$stime,$sinstructor,$sday,$islab,$istutorial,$sdescription,$course);
+		}
+		$ok=mysqli_stmt_execute($stmt);
+		mysqli_stmt_close($stmt);
+		echo"<script>window.alert('".($ok?'Successfully '.($editId?'updated':'created').' subject':'Unable to save subject')."')</script>";
+		echo"<script>window.location='subjectreg.php'</script>";
 	}
 	
 	
@@ -72,13 +92,14 @@ include('includes/menu1.php');
 	<div class="shell">
 	<center>
 	<form class='cmxform' method='POST'>
+	<input type='hidden' name='accid' value='<?php echo $editId;?>'>
 	<fieldset>
 			<legend>Course Details</legend>
 			  <ol>
 			  <li>
 				  <label for="name">Select Course:<em>*</em></label>
 				  <select name='course'>
-					<option value='bsit'>BSIT</option>
+					<option value='bsit' <?php echo (!$subjectRow || $subjectRow['course_con']=='bsit')?'selected':'';?>>BSIT</option>
 				  </select>
 				
   </ol>
@@ -91,40 +112,35 @@ include('includes/menu1.php');
 			  <li>
 					<table>
 						<tr>
-							<td>Subject Code:</td><td align='left'><input type='text' required='required' maxlength='50' id="name" name='scode' /></td>
+							<td>Subject Code:</td><td align='left'><input type='text' required='required' maxlength='50' id="name" name='scode' value="<?php echo htmlspecialchars($subjectRow['subjectcode'] ?? '');?>" /></td>
 						</tr>
 						<tr>
-							<td>Subject Title:</td><td align='left'><input type='text' required='required' id="name" name='stitle' /></td>
+							<td>Subject Title:</td><td align='left'><input type='text' required='required' id="name" name='stitle' value="<?php echo htmlspecialchars($subjectRow['subjecttitle'] ?? '');?>" /></td>
 						</tr>
 						<tr>
 							<td>Number of Units:</td><td align='left'><select name='numunits'>
-														<option value='1'>1</option>
-														<option value='2'>2</option>
-														<option value='3'>3</option>
-														<option value='4'>4</option>
-														<option value='5'>5</option>
-														<option value='6'>6</option></select></td>
+														<?php for($units=1;$units<=6;$units++){ $selected=isset($subjectRow['numofunits']) && (string)$subjectRow['numofunits']===(string)$units?'selected':''; echo "<option value='$units' $selected>$units</option>"; } ?></select></td>
 						</tr>
 						<tr>
-							<td><label>Subject Description:</label></td><td align='left'><textarea name='cdescription'></textarea></td>
+							<td><label>Subject Description:</label></td><td align='left'><textarea name='cdescription'><?php echo htmlspecialchars($subjectRow['description'] ?? '');?></textarea></td>
 						</tr>
 						<tr>
-							<td><label>Room:</label></td><td align='left'><input type='text' required='required' id="name" name='sroom' /></td>
+							<td><label>Room:</label></td><td align='left'><input type='text' required='required' id="name" name='sroom' value="<?php echo htmlspecialchars($subjectRow['room'] ?? '');?>" /></td>
 						</tr>
 						<tr>
-							<td><label>Day:</label></td><td align='left'><input type='text' required='required' id="name" name='sday' /></td>
+							<td><label>Day:</label></td><td align='left'><input type='text' required='required' id="name" name='sday' value="<?php echo htmlspecialchars($subjectRow['day'] ?? '');?>" /></td>
 						</tr>
 						<tr>
-							<td><label>Time:</label></td><td align='left'><input type='text' required='required' id="name" name='stime' /></td>
+							<td><label>Time:</label></td><td align='left'><input type='text' required='required' id="name" name='stime' value="<?php echo htmlspecialchars($subjectRow['time'] ?? '');?>" /></td>
 						</tr>
 						<tr>
-							<td><label>Instructor:</label></td><td align='left'><input type='text' required='required' id="name" name='sinstructor' /></td>
+							<td><label>Instructor:</label></td><td align='left'><input type='text' required='required' id="name" name='sinstructor' value="<?php echo htmlspecialchars($subjectRow['instructor'] ?? '');?>" /></td>
 						</tr>
 						<tr>
-							<td><label>With Lab:</label></td><td align='left'><input type='checkbox' name='islab'></td>
+							<td><label>With Lab:</label></td><td align='left'><input type='checkbox' name='islab' <?php echo !empty($subjectRow['islab'])?'checked':'';?>></td>
 						</tr>
 						<tr>
-							<td><label>With Tutorial:</label></td><td align='left'><input type='checkbox' name='istutorial'></td>
+							<td><label>With Tutorial:</label></td><td align='left'><input type='checkbox' name='istutorial' <?php echo !empty($subjectRow['istutorial'])?'checked':'';?>></td>
 						</tr>
 					</table>
 					
